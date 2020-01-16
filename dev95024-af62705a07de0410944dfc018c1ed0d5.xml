@@ -1,0 +1,317 @@
+<?xml version="1.0" encoding="UTF-8"?><unload unload_date="2020-01-16 10:36:37"><sys_remote_update_set action="INSERT_OR_UPDATE"><application display_value="Global">global</application><application_name>Global</application_name><application_scope>global</application_scope><application_version/><collisions/><commit_date/><deleted/><description/><inserted/><name>(JDS) Sprint Review</name><origin_sys_id/><parent/><release_date/><remote_base_update_set/><remote_parent_id/><remote_sys_id>af62705a07de0410944dfc018c1ed0d5</remote_sys_id><state>loaded</state><summary/><sys_class_name>sys_remote_update_set</sys_class_name><sys_created_by>admin</sys_created_by><sys_created_on>2020-01-16 10:36:37</sys_created_on><sys_id>6b530b7607d6c410944dfc018c1ed075</sys_id><sys_mod_count>0</sys_mod_count><sys_updated_by>admin</sys_updated_by><sys_updated_on>2020-01-16 10:36:37</sys_updated_on><update_set/><update_source/><updated/></sys_remote_update_set><sys_update_xml action="INSERT_OR_UPDATE"><action>INSERT_OR_UPDATE</action><application display_value="Global">global</application><category>customer</category><comments/><name>sp_widget_8c9cb04ddb504850041264a14a9619fe</name><payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;record_update&gt;&lt;sp_widget action="INSERT_OR_UPDATE"&gt;
+&lt;category&gt;custom&lt;/category&gt;
+&lt;client_script&gt;&lt;![CDATA[function($scope) {
+
+	var c = this, thisChart;
+	$scope.showInstructions = true;
+
+	$scope.selectedSprint = {
+		displayValue: c.data.selection.displayValue,
+		value: c.data.selection.value,
+		name: 'selectedSprint'
+	};
+
+	$scope.$on("field.change", function(evt, parms) {
+		if (parms.field.name == 'selectedSprint'){
+
+			c.server.get({getChart:parms.newValue}).then(function(response){
+			
+				$scope.showInstructions = false;
+				
+				c.data = response.data;
+
+				if(thisChart!==undefined){thisChart.destroy();}
+
+				thisChart = new Highcharts.chart('container', {
+					chart: {
+						type: 'areaspline'
+					},
+					title: {
+						text: parms.displayValue
+					},
+					subtitle: {
+						text: 'Sprint Performance'
+					},
+					xAxis: {
+						
+						categories: c.data.chartData.categories /*,
+					plotBands: [{ // visualize the weekend
+							from: 4.5,
+							to: 6.5,
+							color: 'rgba(68, 170, 213, .2)'
+					}]*/
+					},
+					yAxis: {
+						allowDecimals: false,
+						title: {
+							text: 'Stories'
+						}
+					},
+					tooltip: {
+						shared: true,
+						valueSuffix: ''
+					},
+					credits: {
+						enabled: false
+					},
+					plotOptions: {
+						areaspline: {
+							marker: {
+								enabled: false
+							}
+						}
+					},
+					series: c.data.chartData.series
+				});
+			})
+		}
+	})
+}]]&gt;&lt;/client_script&gt;
+&lt;controller_as&gt;c&lt;/controller_as&gt;
+&lt;css&gt;.column1 {
+    float: left;
+    width: 20%;
+  	//padding-left:20px;
+  	padding-bottom:6px;
+  	padding-top:6px;
+}
+.column2 {
+    float: left;
+    width: 80%;
+  	padding-left:20px;
+  	padding-bottom:6px;
+  	padding-top:6px;
+}
+
+.columnA {
+    float: left;
+    width: 20%;
+  	//padding-left:20px;
+  	padding-bottom:6px;
+  	padding-top:6px;
+}
+.columnB {
+    float: left;
+    width: 30%;
+  	padding-left:20px;
+  	padding-bottom:6px;
+  	padding-top:6px;
+}
+
+.columnThirdLabel {
+    float: left;
+    width: 24.6%;
+  	padding-bottom:6px;
+  	padding-top:6px;
+}
+
+.columnThirdCheckBox {
+    float: left;
+    width: 8.6%;
+    margin: auto;
+  	padding-left:20px;
+  	padding-bottom:6px;
+  	padding-top:6px;
+}
+
+.row{
+ 	height:46; 
+}&lt;/css&gt;
+&lt;data_table&gt;sp_instance&lt;/data_table&gt;
+&lt;demo_data/&gt;
+&lt;description/&gt;
+&lt;docs display_value=""/&gt;
+&lt;field_list/&gt;
+&lt;has_preview&gt;true&lt;/has_preview&gt;
+&lt;id&gt;sprint_performance&lt;/id&gt;
+&lt;internal&gt;false&lt;/internal&gt;
+&lt;link&gt;&lt;![CDATA[function link(scope, element, attrs, controller) {  }]]&gt;&lt;/link&gt;
+&lt;name&gt;Sprint Performance&lt;/name&gt;
+&lt;option_schema/&gt;
+&lt;public&gt;false&lt;/public&gt;
+&lt;roles/&gt;
+&lt;script&gt;&lt;![CDATA[(function() {
+	
+	data.selection = {'displayValue':'','value':''};
+ 
+	if(input.hasOwnProperty('getChart')){
+		
+		var today = new GlideDateTime().getNumericValue();//we'll provide epoch default dates in case no dates are found in an empty sprint
+		var chartData = {"categories":[], "series":[], "rawData":[], "states":{"New":0}, "dates":{}, "start":today, "end":today + (86400000 * 7)}
+		var eachDate, eachState
+ 
+		var thisTable = 'rm_story'
+		var thisSprint = input.getChart;
+		
+		//First get all the possible story states
+		var theseStates = new GlideRecord('sys_choice');
+		theseStates.addEncodedQuery('element=state^name=rm_story');
+		theseStates.query();
+		while(theseStates.next()){
+			chartData.states[theseStates.label] = 0;
+		} 
+
+		//Second, get the date ranges covered by this sprint
+		var sprintDates =new GlideAggregate('rm_story');
+		sprintDates.addEncodedQuery('sprint.sys_id='+thisSprint)
+		sprintDates.addAggregate('MIN','sys_created_on');
+		sprintDates.addAggregate('MAX','sys_updated_on');
+		sprintDates.groupBy('sprint');
+		sprintDates.query();
+		if(sprintDates.next()){
+			chartData.start = new GlideDateTime(sprintDates.getAggregate('MIN','sys_created_on')).getNumericValue();
+			chartData.end   = new GlideDateTime(sprintDates.getAggregate('MAX','sys_updated_on')).getNumericValue();
+		}
+
+		chartData.end+= (86400000 * 1)
+		
+		//if(chartData.start==chartData.end){chartData.end+= (86400000 * 7)}
+
+		//Third, calculate all the dates between the start and end
+		eachDate = chartData.start;
+
+		while (eachDate &lt;= chartData.end) {
+			chartData.dates[convertDate(new Date(eachDate))] = true;
+			eachDate += 86400000;
+		}
+
+		//Fourth, now we can populate the X &amp; Y coordinates with every possibility of state and date
+		for(eachDate in chartData.dates){
+			chartData.rawData.push({"x": eachDate, "y": JSON.parse(JSON.stringify(chartData.states))})
+		}
+
+		//Fifth step, we can populate our raw data with values from the sprint
+		var stories = new GlideRecord('rm_story')
+		stories.addEncodedQuery('sys_class_name=rm_story^sprint='+thisSprint)
+		stories.query();
+
+		while(stories.next()){
+			var thisSysID = stories.sys_id.toString();
+
+			var setSysid = new GlideHistorySet('rm_story', thisSysID).generate();
+
+			var historyLines =new GlideRecord('sys_history_line');
+			historyLines.addEncodedQuery('set.sys_id='+setSysid+'^label=state');
+			historyLines.query();
+
+			while(historyLines.next()){
+
+				eachDate = historyLines.update_time.toString().substring(0,10);
+				//Match the date from the history audit with our raw data
+				chartData.rawData.forEach(function(occassion){
+					if(occassion.x == eachDate){
+						var from = gs.nil(historyLines.old.toString()) ? 'New': historyLines.old.toString();
+						var to = historyLines['new'].toString();
+						occassion.y[from]--;
+						occassion.y[to]++;
+					}
+				})
+			}
+		}
+
+		//This has given us the activity on each day, now we want to push that into rolling totals accumulating throughout the sprint
+
+		//Sixth step, we can now accumulate values/movement from one day to the next
+		chartData.rawData.forEach(function(occassion){
+			for(eachState in occassion.y){
+				chartData.states[eachState]= chartData.states[eachState] + occassion.y[eachState];
+				occassion.y[eachState] = chartData.states[eachState];
+			}		
+		})
+
+		//Because "New" isn't actually a state, it ends up in the negative so we'll switch this to positive (also, note that new NEVER goes down as we're tracking something slightly different and that's how many &amp; when new stories appear)
+		chartData.rawData.forEach(function(occassion){
+			occassion.y['New'] = 0 - occassion.y['New'];
+		})
+
+		////////////////////////////////////////////////////////////////////////////
+		//Finally, we can massage the data to suit Highcharts
+		for(eachDate in chartData.dates){chartData.categories.push(eachDate)}
+
+		for(eachState in chartData.states){
+			var stateData = [];
+			chartData.rawData.forEach(function(occassion){
+				stateData.push(occassion.y[eachState])
+			})
+			chartData.series.push({"name": eachState, 
+														 "data":stateData, 
+														 "type":"areaspline", 
+														 "fillOpacity":eachState=="New" ? "0" :"0.3"
+														 
+														})
+		}
+		
+	  data.chartData = chartData
+		console.log(data.chartData) 
+	}	
+
+
+	///////////////////////////////////////////////
+	function convertDate(date) {
+		var yyyy = date.getFullYear().toString();
+		var mm = (date.getMonth()+1).toString();
+		var dd  = date.getDate().toString();
+
+		var mmChars = mm.split('');
+		var ddChars = dd.split('');
+
+		return yyyy + '-' + (mmChars[1]?mm:"0"+mmChars[0]) + '-' + (ddChars[1]?dd:"0"+ddChars[0]);
+	}
+	///////////////////////////////////////////////
+
+
+
+})();]]&gt;&lt;/script&gt;
+&lt;servicenow&gt;false&lt;/servicenow&gt;
+&lt;sys_class_name&gt;sp_widget&lt;/sys_class_name&gt;
+&lt;sys_created_by&gt;pcawdron&lt;/sys_created_by&gt;
+&lt;sys_created_on&gt;2019-10-03 04:12:41&lt;/sys_created_on&gt;
+&lt;sys_id&gt;8c9cb04ddb504850041264a14a9619fe&lt;/sys_id&gt;
+&lt;sys_mod_count&gt;142&lt;/sys_mod_count&gt;
+&lt;sys_name&gt;Sprint Performance&lt;/sys_name&gt;
+&lt;sys_package display_value="Global" source="global"&gt;global&lt;/sys_package&gt;
+&lt;sys_policy/&gt;
+&lt;sys_scope display_value="Global"&gt;global&lt;/sys_scope&gt;
+&lt;sys_update_name&gt;sp_widget_8c9cb04ddb504850041264a14a9619fe&lt;/sys_update_name&gt;
+&lt;sys_updated_by&gt;pcawdron&lt;/sys_updated_by&gt;
+&lt;sys_updated_on&gt;2019-10-08 06:59:35&lt;/sys_updated_on&gt;
+&lt;template&gt;&lt;![CDATA[&lt;div style="text-align: center"&gt;
+  &lt;div class="row" style="display: inline-block"&gt;
+    &lt;div class="column1"&gt;
+      &lt;label class="label-text" style="margin-top:10px;width:200px"&gt;Select an Agile Sprint&lt;/label&gt;
+    &lt;/div&gt;
+    &lt;div class="column2" style="width:500px;"&gt;
+      &lt;sn-record-picker sn-disabled="false" id="selectedSprint" placeholder="Select a recent sprint" field="selectedSprint" table="'rm_sprint'" display-field="'short_description'" value-field="'sys_id'"  search-fields="'short_description'" page-size="20" default-query="" ng-change="getSprint()"&gt;&lt;/sn-record-picker&gt;
+    &lt;/div&gt;
+  &lt;/div&gt;
+
+  &lt;div class="row" style="display: inline-block"&gt;
+    &lt;div id="instructions" ng-show="showInstructions" style="margin-left:100px;margin-top:20px;width:80%;text-align:left;"&gt;
+      &lt;p style="font-weight:bold"&gt;Instructions&lt;/p&gt;
+      &lt;p&gt;This sprint performance graph will track the lifecycle of stories in your sprint by their state as it changes over time, allowing you to understand the health of your sprint as it progresses.&lt;/p&gt;
+      &lt;p&gt;Characteristics to look for are:&lt;/p&gt;
+      &lt;ul&gt;
+        &lt;li&gt;How early or late within the sprint stories are added as New, Draft or Ready (these should be weighted toward the start of the sprint but tend to occur toward the end when requirements aren't properly defined)&lt;/li&gt;
+        &lt;li&gt;How consistently stories are listed as work in progress and moved to ready for testing&lt;/li&gt;
+        &lt;li&gt;When testing is occuring&lt;/li&gt;
+        &lt;li&gt;Whether defects are being addressed in a timely manner&lt;/li&gt;
+        &lt;li&gt;How quickly stories are being completed&lt;/li&gt;
+      &lt;/ul&gt;
+
+      &lt;p style="font-weight:bold;color:red"&gt;Pro Tips:&lt;/p&gt;
+      &lt;ul&gt;
+        &lt;li&gt;The &lt;span style="font-weight:bold;color:Navy"&gt;New&lt;/span&gt; state only ever increases (even though in practice stories change states over time) allowing you to view how stories have been added over the course of the sprint. All other states are transitory, only showing the steady-state value at that time.&lt;/li&gt;
+        &lt;li&gt;You can filter states by hovering or clicking on them to make the chart easier to read&lt;/li&gt;
+      &lt;/ul&gt;
+    &lt;/div&gt;
+  &lt;/div&gt;
+&lt;/div&gt;
+
+
+
+
+
+&lt;div&gt;
+  &lt;div id="container" style="min-width: 80%; min-height: 800px; margin: 0 auto"&gt;&lt;/div&gt;
+&lt;/div&gt;]]&gt;&lt;/template&gt;
+&lt;/sp_widget&gt;&lt;/record_update&gt;</payload><payload_hash>1930914246</payload_hash><remote_update_set display_value="(JDS) Sprint Review">6b530b7607d6c410944dfc018c1ed075</remote_update_set><replace_on_upgrade>false</replace_on_upgrade><sys_created_by>admin</sys_created_by><sys_created_on>2020-01-16 10:36:37</sys_created_on><sys_id>23530b7607d6c410944dfc018c1ed078</sys_id><sys_mod_count>0</sys_mod_count><sys_recorded_at>16fa3a962f20000001</sys_recorded_at><sys_updated_by>admin</sys_updated_by><sys_updated_on>2020-01-16 10:36:37</sys_updated_on><table/><target_name>Sprint Performance</target_name><type>Widget</type><update_domain>global</update_domain><update_guid>09cc5a34de2408101f47d5dbbca3b4d5</update_guid><update_guid_history>09cc5a34de2408101f47d5dbbca3b4d5:1930914246,6b816ed9ead488d403311889cecd188f:318603932,d39066d967d488d47eee6b7f8e8d6447:-1455271380,6520a299b0d488d4071ce9192be0b665:-1550960090,84002e59a8d488d4f8503d674ff166c7:1828950379,00df165950d488d46cc1ea0279b86011:1555541886,7c8f9e19fbd488d4fee7b650cefa3525:-1849597205,146bdad1b8108850c655a31d2e28d814:-1532209214,ed4b1ad11a1088502d0103cd512aafdf:-788373707,732b1ad18410885086c2202bf68d2fa8:-156136473,a71b5e91ef1088508a42fb630af0ae04:667842099,000bde91cf108850c318efd22bbe2104:1250938141,bf9a1e91111088501c9a0142e6862192:-257174792,898a9e1da2dc48506e569292ea8ac000:-1190314096,5e6a9e916810885038feb8b1cfe3ddef:-1469988821,b23ad291ef1088508088b2c7eba29e94:-510660464,57f41a1db2dc4850125eeaeeed71bb7c:-1442298951,f6e41e1d5bdc48507efdb18848a1d68e:-1520495948,b6c4dad940dc485009f89749612fe5c4:1534148876,eb8452d95adc4850b4b0aa30cb34cf86:1653631738,6b141ed964dc48500a74e7df3ecd4dc0:875417492,ecf3ded99ddc48509160bbcd703476fe:-751501528,5ed3ded991dc4850df0fdc3586575df7:1982228449,f4931ed999dc48508b0a369133fe04b9:-336803509,7b63d2d960dc48501ba5115acab6509b:-667723869,f103d6d94fdc48502f1ff6449a908606:-1203324000,34b2d2d9a2dc4850e5ed88ed24a22f93:378898753,bc825a99a6dc4850a44e05c4431179c0:1949116874,44c196996edc4850463bcee2644620ad:1644099697,9f7116196adc48507c3e88c470f46d33:-833889998,0e7f02195ddc4850e5c37853e27be675:-299601743,92ee8ed515dc4850cc4985a8a2d6f9f2:1463866597,5ace8ad5a3dc4850351184b3ad601d3c:1679718140,09ae0219d8dc48508085a445b0d5e86d:-701814886,2b8e8e95ecdc48508a525b73b128f4c1:1139563016,ea7e8ed5addc4850b7052e638be5ae30:-968801241,764e06d5c6dc4850527b809a258b55fb:-1021312562,1d2ec25531dc4850bcdd12b42f4f01f5:-1132018560,b61ec2d5a0dc48506767265781945196:-1580395452,d6ed02d5c4dc485025ff273389470ef1:-1471843995,34bdce956adc4850512e3708c67015de:-329826858,109dc2d57cdc4850a957e3329667d98f:639064532,305d8e95acdc4850746721f85608f6cd:-1215117602,522d8e9582dc4850e9fe92376d9bd4a5:1580021164,3c7c8a555cdc485001cafe6f2077b1c8:1992098997,4e1c4e55ebdc48505b1b4d84dfbc2513:1901819034,688b4e5533dc4850a97116d836010a0c:1050961946,fa3b4a5529dc48506d8078ffdc10c0da:620690867,2dca0655d7dc4850ff1298d3cc4423b4:1553110376,1aba0691e0dc4850249c1c77d3da4179:-699332536,045ace1509dc4850ff0af32d0f0b121a:-1583918909,28380e51a0dc48500f1304775af5b606:1068524111,2df7ce513bdc48505c84e52232b87e41:1651492614,eaa7069db59c4850d40383f8ae82bb36:-1574999571,59570a51e1dc48502c6a44627f37278b:659312271,04d6425129dc485058b69e36f6f15f85:507403384,ddb6425151dc4850d98e2f3f251b399a:973413213,4896ca11b8dc48507ea128e5f2ecd690:510357465,2036ca111adc4850ad2a504a5584f288:-576999545,5bc50e5daa9c48508540dff59d58fcac:1329456532,8855869ddf9c48505547c9541f3df73c:408495667,b1230e9dfe9c48507ddbc2218d4a20f9:794339237,b6b20a9db49c4850bc8f6c0506667da7:-961516236,9f72469db99c4850e37f5064ff7908bc:1613043091,1e52465d1f9c4850efafa5fd76b7837b:-1787639221,1d42c29db59c4850c8b7692ca8eb2436:-706101396,dec18e5d949c4850bb60586ebbf4d432:-1757497276,35a1465d1b9c48504953ffeaf3178eaf:1018057868,8ef0c25d5c9c4850cdc2e63556ba1966:-1110786892,43c0c25da29c4850070f67539a1b9043:829595413,6db00e1d6c9c4850a6967bad2285db3e:-796531487,61ff351d3f9c4850a43a03d9460ce1c7:575549178,45df7d195b9c485094c131f86f442da1:-1951579973,cd7f311d1a9c485005d3f3fe0b8e65b4:1220472001,5dcebd99649c4850117abe241a13812f:-555576715,183e3d99279c485040176f5409988a76:-1858669873,03fdb119429c4850ed4f8488c9dfcbbe:-270050742,19adbd99139c48508638f71e94a6b228:2107338201,8e7db599f39c4850c216e9e44a04cb28:-1716247185,8e1d3191fd9c4850af2788c01bb9a1f1:-103849082,7e0d39991d9c4850616365d117ce6805:1519767241,35dcb599fa9c4850d544b66cef0dc415:1278594165,8b29b119d39c48505f958b471fad3db6:1486968074,fdefe591d39c485077b007a0b372967b:1312372228,e8cf65917f9c4850b40f7362a498edd4:-767461375,028fe191119c485062de46a846574940:1963411175,9f5fad55535c4850b77d91ab77039421:837078901,acc8655d7b5c4850abf915326f00e9f9:512365927,5fa8a95d6d5c4850d3cc626463e31d3f:114832207,9f282d59ab5c4850add8848a8ca900b0:-921929346,b5c7655d195c48505d30def720843b17:-1912189044,63a72dd5a15c4850022320657e117027:838221375,cf87691d265c4850abe2aec392559166:-1777850444,7786691db95c4850027d94f7c7bc5647:-871266188,88826959b15c485033d940c754bd304f:835314322,7d626199005c4850fa0ad1cf1b2ba90d:1637032759,0b026959b35c48508e238f6ab46e7948:1803086264,0fc129193e5c4850664d3a5a9f0bbf54:1008527930,369e9d5dd11c485081b32a3ec10f8f9a:-1678519602,7ce959d19f5c4850093cfa875b011935:908244849,7bb999d1585c4850ac291142c6dc1efb:379575297,c472155d421c48505dadd4f8c9126a9a:-1948647858,6105cdd1781c4850eb150059dcb4167d:-243076046,a5020d91e61c485091ef4e7e8d6b1282:1215130498,8f71c591731c485051b0e2bdf5ec1a42:-1797877830,d521455dc8d84850c9a7bf3f3c6082ea:-125837951,02b0e58583d04850b2c4bedb2a9a1243:-1876244256,bc90ad454ed04850950629e803908fb4:-131382325,f56069851bd04850414f3bce4460f33f:5033107,13fe1d8585d0485099d3bb03f7eebfca:1980467274,41ae954560d04850ed18c5926b577976:-1808858786,acad994128d048503ca5d7495092ea0e:-2031857060,28dc5545e6d048501f91848a53464084:-795044325,541c19055ad048509754f9ad28a331fe:-1143588365,9dab9541b9d04850c197aa0ccaf11786:475671309,c0fa9dc199d0485070befd2fc71c521c:-271820834,9ed7d94128d04850be8ddfabe453038d:-2079767939,b947950193d0485014af1c1e4c08f83e:1217075159,2d27954107d04850b3edc9ab75891f5e:-1538719593,0fe6d90111d04850ed3973f07aa601bf:1870106663,dac61dcdf5904850507aad6d59dbf0c6:-1814036691,cfb5d901dad0485075cd75f42bf72360:2120932848,38e49dcd3a90485045e9f830164efa08:-1583452058,07749dcdb8904850ff823f5b32fc8301:-1874270692,d864194d119048509d4ccbb0319aa458:-649748116,f0a3514d9e904850a717f3b917f1fce9:-189287871,a7d0514dcf90485066007f66b69c87f4:-927245339,9040d90dae904850a1a79835814db6e7:1246787528,8dbfc90d5190485065d1b62dd5eb2bdf:687021380,f9afc90dbb904850f7dd04ce98b8662f:416389362,e39f890d18904850225ce648260d2fb5:687021380,3b4fc50d6490485080161d1e9e4d0365:-1443602108,bbbd45c9c69048506a1717ef8a920231:803367483,019d05c96490485083cb102bc7023ece:-1461835273,c2cfb0819890485092d48f4d7a18bbf1:-975602964,3f7ef401ad904850f3e18a4172077c24:-1155849891,497e3801ab904850600bd1bd2cfbe311:-929129763,b43ef40112904850334ff98f0be0401c:-340495187,bc2d3401f5904850e22daddb4909483d:2033088841,b1fc70019f90485009ef712c8bfc5990:-774163508,c89cf04d58504850ddea25ca39fdaf00:-1768922606</update_guid_history><update_set/><view/></sys_update_xml><sys_update_xml action="INSERT_OR_UPDATE"><action>INSERT_OR_UPDATE</action><application display_value="Global">global</application><category>customer</category><comments/><name>sp_js_include_632ff041db904850041264a14a961981</name><payload><![CDATA[<?xml version="1.0" encoding="UTF-8"?><record_update table="sp_js_include"><sp_js_include action="INSERT_OR_UPDATE"><display_name>https://code.highcharts.com/modules/exporting.js</display_name><source>url</source><sys_class_name>sp_js_include</sys_class_name><sys_created_by>pcawdron</sys_created_by><sys_created_on>2019-10-03 04:24:45</sys_created_on><sys_id>632ff041db904850041264a14a961981</sys_id><sys_mod_count>0</sys_mod_count><sys_name>https://code.highcharts.com/modules/exporting.js</sys_name><sys_package display_value="Global" source="global">global</sys_package><sys_policy/><sys_scope display_value="Global">global</sys_scope><sys_ui_script/><sys_update_name>sp_js_include_632ff041db904850041264a14a961981</sys_update_name><sys_updated_by>pcawdron</sys_updated_by><sys_updated_on>2019-10-03 04:24:45</sys_updated_on><url>https://code.highcharts.com/modules/exporting.js</url></sp_js_include></record_update>]]></payload><payload_hash>-124625540</payload_hash><remote_update_set display_value="(JDS) Sprint Review">6b530b7607d6c410944dfc018c1ed075</remote_update_set><replace_on_upgrade>false</replace_on_upgrade><sys_created_by>admin</sys_created_by><sys_created_on>2020-01-16 10:36:37</sys_created_on><sys_id>27530b7607d6c410944dfc018c1ed077</sys_id><sys_mod_count>0</sys_mod_count><sys_recorded_at>16fa3a962c70000001</sys_recorded_at><sys_updated_by>admin</sys_updated_by><sys_updated_on>2020-01-16 10:36:37</sys_updated_on><table/><target_name>https://code.highcharts.com/modules/exporting.js</target_name><type>JS Include</type><update_domain>global</update_domain><update_guid>385f784123904850e629cba63d39ad3d</update_guid><update_guid_history>385f784123904850e629cba63d39ad3d:-124625540</update_guid_history><update_set/><view/></sys_update_xml><sys_update_xml action="INSERT_OR_UPDATE"><action>INSERT_OR_UPDATE</action><application display_value="Global">global</application><category>customer</category><comments/><name>sp_column_b7f80a51dbdc4850041264a14a961991</name><payload><![CDATA[<?xml version="1.0" encoding="UTF-8"?><record_update table="sp_column"><sp_column action="INSERT_OR_UPDATE"><class_name/><order>1</order><size>12</size><size_lg/><size_sm/><size_xs/><sp_row display_value="1">77f80a51dbdc4850041264a14a96198f</sp_row><sys_class_name>sp_column</sys_class_name><sys_created_by>pcawdron</sys_created_by><sys_created_on>2019-10-04 04:25:07</sys_created_on><sys_id>b7f80a51dbdc4850041264a14a961991</sys_id><sys_mod_count>2</sys_mod_count><sys_name>1</sys_name><sys_package display_value="Global" source="global">global</sys_package><sys_policy/><sys_scope display_value="Global">global</sys_scope><sys_update_name>sp_column_b7f80a51dbdc4850041264a14a961991</sys_update_name><sys_updated_by>pcawdron</sys_updated_by><sys_updated_on>2019-10-04 05:57:05</sys_updated_on></sp_column></record_update>]]></payload><payload_hash>952709727</payload_hash><remote_update_set display_value="(JDS) Sprint Review">6b530b7607d6c410944dfc018c1ed075</remote_update_set><replace_on_upgrade>false</replace_on_upgrade><sys_created_by>admin</sys_created_by><sys_created_on>2020-01-16 10:36:37</sys_created_on><sys_id>2b530b7607d6c410944dfc018c1ed076</sys_id><sys_mod_count>0</sys_mod_count><sys_recorded_at>16fa3a962e20000001</sys_recorded_at><sys_updated_by>admin</sys_updated_by><sys_updated_on>2020-01-16 10:36:37</sys_updated_on><table/><target_name>1</target_name><type>Column</type><update_domain>global</update_domain><update_guid>870e565513108850ecdd3c817a34ed36</update_guid><update_guid_history>870e565513108850ecdd3c817a34ed36:952709727,4dedd655ca1088505af38042229f9edf:2091156273,7bf80a5146dc4850245cd727351be392:952709727</update_guid_history><update_set/><view/></sys_update_xml><sys_update_xml action="INSERT_OR_UPDATE"><action>INSERT_OR_UPDATE</action><application display_value="Global">global</application><category>customer</category><comments/><name>sp_instance_74b90691dbdc4850041264a14a961986</name><payload><![CDATA[<?xml version="1.0" encoding="UTF-8"?><record_update table="sp_instance"><sp_instance action="INSERT_OR_UPDATE"><active>true</active><class_name/><color>default</color><css/><glyph/><id/><order>1</order><roles/><short_description/><size>md</size><sp_column display_value="10">b7f80a51dbdc4850041264a14a961991</sp_column><sp_widget display_value="Sprint Performance">8c9cb04ddb504850041264a14a9619fe</sp_widget><sys_class_name>sp_instance</sys_class_name><sys_created_by>pcawdron</sys_created_by><sys_created_on>2019-10-04 04:28:11</sys_created_on><sys_id>74b90691dbdc4850041264a14a961986</sys_id><sys_mod_count>1</sys_mod_count><sys_name>Sprint Review</sys_name><sys_package display_value="Global" source="global">global</sys_package><sys_policy/><sys_scope display_value="Global">global</sys_scope><sys_update_name>sp_instance_74b90691dbdc4850041264a14a961986</sys_update_name><sys_updated_by>pcawdron</sys_updated_by><sys_updated_on>2019-10-04 05:56:34</sys_updated_on><title>Sprint Review</title><url/><widget_parameters/></sp_instance><sys_translated_text action="delete_multiple" query="documentkey=74b90691dbdc4850041264a14a961986"/></record_update>]]></payload><payload_hash>-188406062</payload_hash><remote_update_set display_value="(JDS) Sprint Review">6b530b7607d6c410944dfc018c1ed075</remote_update_set><replace_on_upgrade>false</replace_on_upgrade><sys_created_by>admin</sys_created_by><sys_created_on>2020-01-16 10:36:37</sys_created_on><sys_id>63530b7607d6c410944dfc018c1ed077</sys_id><sys_mod_count>0</sys_mod_count><sys_recorded_at>16fa3a962d10000001</sys_recorded_at><sys_updated_by>admin</sys_updated_by><sys_updated_on>2020-01-16 10:36:37</sys_updated_on><table/><target_name>Sprint Review</target_name><type>Instance</type><update_domain>global</update_domain><update_guid>67ed5a5560108850720da93c39331274</update_guid><update_guid_history>67ed5a5560108850720da93c39331274:-188406062,30b9069124dc48507e622416ba3cac88:-1974017013</update_guid_history><update_set/><view/></sys_update_xml><sys_update_xml action="INSERT_OR_UPDATE"><action>INSERT_OR_UPDATE</action><application display_value="Global">global</application><category>customer</category><comments/><name>m2m_sp_widget_dependency_9e0f7841db904850041264a14a961916</name><payload><![CDATA[<?xml version="1.0" encoding="UTF-8"?><record_update table="m2m_sp_widget_dependency"><m2m_sp_widget_dependency action="INSERT_OR_UPDATE"><sp_dependency display_value="Highcharts reference">35fe3441db904850041264a14a961943</sp_dependency><sp_widget display_value="Sprint Performance">8c9cb04ddb504850041264a14a9619fe</sp_widget><sys_class_name>m2m_sp_widget_dependency</sys_class_name><sys_created_by>pcawdron</sys_created_by><sys_created_on>2019-10-03 04:23:30</sys_created_on><sys_id>9e0f7841db904850041264a14a961916</sys_id><sys_mod_count>0</sys_mod_count><sys_name>Highcharts reference.Sprint Performance</sys_name><sys_package display_value="Global" source="global">global</sys_package><sys_policy/><sys_scope display_value="Global">global</sys_scope><sys_update_name>m2m_sp_widget_dependency_9e0f7841db904850041264a14a961916</sys_update_name><sys_updated_by>pcawdron</sys_updated_by><sys_updated_on>2019-10-03 04:23:30</sys_updated_on></m2m_sp_widget_dependency></record_update>]]></payload><payload_hash>-843030747</payload_hash><remote_update_set display_value="(JDS) Sprint Review">6b530b7607d6c410944dfc018c1ed075</remote_update_set><replace_on_upgrade>false</replace_on_upgrade><sys_created_by>admin</sys_created_by><sys_created_on>2020-01-16 10:36:37</sys_created_on><sys_id>67530b7607d6c410944dfc018c1ed076</sys_id><sys_mod_count>0</sys_mod_count><sys_recorded_at>16fa3a962b70000001</sys_recorded_at><sys_updated_by>admin</sys_updated_by><sys_updated_on>2020-01-16 10:36:37</sys_updated_on><table/><target_name>Highcharts reference.Sprint Performance</target_name><type>Widget Dependency</type><update_domain>global</update_domain><update_guid>160f7841149048507973190baaaf8018</update_guid><update_guid_history>160f7841149048507973190baaaf8018:-843030747</update_guid_history><update_set/><view/></sys_update_xml><sys_update_xml action="INSERT_OR_UPDATE"><action>INSERT_OR_UPDATE</action><application display_value="Global">global</application><category>customer</category><comments/><name>sp_row_77f80a51dbdc4850041264a14a96198f</name><payload><![CDATA[<?xml version="1.0" encoding="UTF-8"?><record_update table="sp_row"><sp_row action="INSERT_OR_UPDATE"><class_name/><order>1</order><sp_column/><sp_container display_value="sprint_review - Container 1">fef88ad1dbdc4850041264a14a961994</sp_container><sys_class_name>sp_row</sys_class_name><sys_created_by>pcawdron</sys_created_by><sys_created_on>2019-10-04 04:25:07</sys_created_on><sys_id>77f80a51dbdc4850041264a14a96198f</sys_id><sys_mod_count>2</sys_mod_count><sys_name>1</sys_name><sys_package display_value="Global" source="global">global</sys_package><sys_policy/><sys_scope display_value="Global">global</sys_scope><sys_update_name>sp_row_77f80a51dbdc4850041264a14a96198f</sys_update_name><sys_updated_by>pcawdron</sys_updated_by><sys_updated_on>2019-10-04 05:56:59</sys_updated_on></sp_row></record_update>]]></payload><payload_hash>476492993</payload_hash><remote_update_set display_value="(JDS) Sprint Review">6b530b7607d6c410944dfc018c1ed075</remote_update_set><replace_on_upgrade>false</replace_on_upgrade><sys_created_by>admin</sys_created_by><sys_created_on>2020-01-16 10:36:37</sys_created_on><sys_id>6f530b7607d6c410944dfc018c1ed077</sys_id><sys_mod_count>0</sys_mod_count><sys_recorded_at>16fa3a962dc0000001</sys_recorded_at><sys_updated_by>admin</sys_updated_by><sys_updated_on>2020-01-16 10:36:37</sys_updated_on><table/><target_name>1</target_name><type>Row</type><update_domain>global</update_domain><update_guid>6d0e9a555110885068c39180614974db</update_guid><update_guid_history>6d0e9a555110885068c39180614974db:476492993,fedd1e1520108850453eeaeb17b208d7:-1417074029,bbf80a5119dc4850036296f26f95f190:-250523667</update_guid_history><update_set/><view/></sys_update_xml><sys_update_xml action="INSERT_OR_UPDATE"><action>INSERT_OR_UPDATE</action><application display_value="Global">global</application><category>customer</category><comments/><name>m2m_sp_dependency_js_include_f05f7841db904850041264a14a96193e</name><payload><![CDATA[<?xml version="1.0" encoding="UTF-8"?><record_update table="m2m_sp_dependency_js_include"><m2m_sp_dependency_js_include action="INSERT_OR_UPDATE"><order>100</order><sp_dependency display_value="Highcharts reference">35fe3441db904850041264a14a961943</sp_dependency><sp_js_include display_value="https://code.highcharts.com/modules/exporting.js">632ff041db904850041264a14a961981</sp_js_include><sys_class_name>m2m_sp_dependency_js_include</sys_class_name><sys_created_by>pcawdron</sys_created_by><sys_created_on>2019-10-03 04:24:45</sys_created_on><sys_id>f05f7841db904850041264a14a96193e</sys_id><sys_mod_count>0</sys_mod_count><sys_name>Highcharts reference.https://code.highcharts.com/modules/exporting.js</sys_name><sys_package display_value="Global" source="global">global</sys_package><sys_policy/><sys_scope display_value="Global">global</sys_scope><sys_update_name>m2m_sp_dependency_js_include_f05f7841db904850041264a14a96193e</sys_update_name><sys_updated_by>pcawdron</sys_updated_by><sys_updated_on>2019-10-03 04:24:45</sys_updated_on></m2m_sp_dependency_js_include></record_update>]]></payload><payload_hash>571845934</payload_hash><remote_update_set display_value="(JDS) Sprint Review">6b530b7607d6c410944dfc018c1ed075</remote_update_set><replace_on_upgrade>false</replace_on_upgrade><sys_created_by>admin</sys_created_by><sys_created_on>2020-01-16 10:36:37</sys_created_on><sys_id>a3530b7607d6c410944dfc018c1ed076</sys_id><sys_mod_count>0</sys_mod_count><sys_recorded_at>16fa3a962cc0000001</sys_recorded_at><sys_updated_by>admin</sys_updated_by><sys_updated_on>2020-01-16 10:36:37</sys_updated_on><table/><target_name>Highcharts reference.https://code.highcharts.com/modules/exporting.js</target_name><type>Dependency JS Includes</type><update_domain>global</update_domain><update_guid>745f784173904850367666363d746d3f</update_guid><update_guid_history>745f784173904850367666363d746d3f:571845934</update_guid_history><update_set/><view/></sys_update_xml><sys_update_xml action="INSERT_OR_UPDATE"><action>INSERT_OR_UPDATE</action><application display_value="Global">global</application><category>customer</category><comments/><name>sp_page_76f88ad1dbdc4850041264a14a961992</name><payload><![CDATA[<?xml version="1.0" encoding="UTF-8"?><record_update table="sp_page"><sp_page action="INSERT_OR_UPDATE"><category>custom</category><css/><draft>false</draft><dynamic_title_structure/><id>sprint_review</id><internal>false</internal><public>false</public><roles>admin,rm_test_user,rm_test_admin,rm_task_user,rm_task_admin,rm_story_admin,rm_sprint_admin,rm_scrum_task_admin,rm_release_user,rm_release_sdlc_user,rm_release_sdlc_admin,rm_release_scrum_admin,rm_release_phase_user,rm_release_phase_admin,rm_release_admin,rm_product_user,rm_product_admin,rm_feature_user,rm_feature_admin,rm_epic_admin,rm_enhancement_user,rm_enhancement_admin,rm_doc_user,rm_doc_admin,rm_defect_user,rm_defect_admin</roles><short_description/><sys_class_name>sp_page</sys_class_name><sys_created_by>pcawdron</sys_created_by><sys_created_on>2019-10-04 04:25:02</sys_created_on><sys_id>76f88ad1dbdc4850041264a14a961992</sys_id><sys_mod_count>3</sys_mod_count><sys_name>sprint_review</sys_name><sys_package display_value="Global" source="global">global</sys_package><sys_policy/><sys_scope display_value="Global">global</sys_scope><sys_update_name>sp_page_76f88ad1dbdc4850041264a14a961992</sys_update_name><sys_updated_by>pcawdron</sys_updated_by><sys_updated_on>2019-10-04 05:58:30</sys_updated_on><title>sprint_review</title></sp_page><sys_translated_text action="delete_multiple" query="documentkey=76f88ad1dbdc4850041264a14a961992"/></record_update>]]></payload><payload_hash>-626623063</payload_hash><remote_update_set display_value="(JDS) Sprint Review">6b530b7607d6c410944dfc018c1ed075</remote_update_set><replace_on_upgrade>false</replace_on_upgrade><sys_created_by>admin</sys_created_by><sys_created_on>2020-01-16 10:36:37</sys_created_on><sys_id>ab530b7607d6c410944dfc018c1ed077</sys_id><sys_mod_count>0</sys_mod_count><sys_recorded_at>16fa3a962eb0000001</sys_recorded_at><sys_updated_by>admin</sys_updated_by><sys_updated_on>2020-01-16 10:36:37</sys_updated_on><table/><target_name>sprint_review</target_name><type>Page</type><update_domain>global</update_domain><update_guid>735e1295d2108850404d6f871a672527</update_guid><update_guid_history>735e1295d2108850404d6f871a672527:-626623063,b5ad96555f1088509c0b612d4e4d590b:-1903947161,f79d16550610885023867e8308c25b91:1051798343,f2f88ad13cdc48508c4a79c41829a294:818387239</update_guid_history><update_set/><view/></sys_update_xml><sys_update_xml action="INSERT_OR_UPDATE"><action>INSERT_OR_UPDATE</action><application display_value="Global">global</application><category>customer</category><comments/><name>sp_dependency_35fe3441db904850041264a14a961943</name><payload><![CDATA[<?xml version="1.0" encoding="UTF-8"?><record_update table="sp_dependency"><sp_dependency action="INSERT_OR_UPDATE"><module/><name>Highcharts reference</name><page_load>false</page_load><sp_portals/><sys_class_name>sp_dependency</sys_class_name><sys_created_by>pcawdron</sys_created_by><sys_created_on>2019-10-03 04:23:30</sys_created_on><sys_id>35fe3441db904850041264a14a961943</sys_id><sys_mod_count>0</sys_mod_count><sys_name>Highcharts reference</sys_name><sys_package display_value="Global" source="global">global</sys_package><sys_policy/><sys_scope display_value="Global">global</sys_scope><sys_update_name>sp_dependency_35fe3441db904850041264a14a961943</sys_update_name><sys_updated_by>pcawdron</sys_updated_by><sys_updated_on>2019-10-03 04:23:30</sys_updated_on></sp_dependency></record_update>]]></payload><payload_hash>1827566531</payload_hash><remote_update_set display_value="(JDS) Sprint Review">6b530b7607d6c410944dfc018c1ed075</remote_update_set><replace_on_upgrade>false</replace_on_upgrade><sys_created_by>admin</sys_created_by><sys_created_on>2020-01-16 10:36:37</sys_created_on><sys_id>af530b7607d6c410944dfc018c1ed076</sys_id><sys_mod_count>0</sys_mod_count><sys_recorded_at>16fa3a962a00000001</sys_recorded_at><sys_updated_by>admin</sys_updated_by><sys_updated_on>2020-01-16 10:36:37</sys_updated_on><table/><target_name>Highcharts reference</target_name><type>Widget Dependency</type><update_domain>global</update_domain><update_guid>520f78415890485064829607dabfd916</update_guid><update_guid_history>520f78415890485064829607dabfd916:1827566531</update_guid_history><update_set/><view/></sys_update_xml><sys_update_xml action="INSERT_OR_UPDATE"><action>INSERT_OR_UPDATE</action><application display_value="Global">global</application><category>customer</category><comments/><name>sp_js_include_6b0fb841db904850041264a14a96198a</name><payload><![CDATA[<?xml version="1.0" encoding="UTF-8"?><record_update table="sp_js_include"><sp_js_include action="INSERT_OR_UPDATE"><display_name>https://code.highcharts.com/highcharts.js</display_name><source>url</source><sys_class_name>sp_js_include</sys_class_name><sys_created_by>pcawdron</sys_created_by><sys_created_on>2019-10-03 04:24:01</sys_created_on><sys_id>6b0fb841db904850041264a14a96198a</sys_id><sys_mod_count>0</sys_mod_count><sys_name>https://code.highcharts.com/highcharts.js</sys_name><sys_package display_value="Global" source="global">global</sys_package><sys_policy/><sys_scope display_value="Global">global</sys_scope><sys_ui_script/><sys_update_name>sp_js_include_6b0fb841db904850041264a14a96198a</sys_update_name><sys_updated_by>pcawdron</sys_updated_by><sys_updated_on>2019-10-03 04:24:01</sys_updated_on><url>https://code.highcharts.com/highcharts.js</url></sp_js_include></record_update>]]></payload><payload_hash>467485471</payload_hash><remote_update_set display_value="(JDS) Sprint Review">6b530b7607d6c410944dfc018c1ed075</remote_update_set><replace_on_upgrade>false</replace_on_upgrade><sys_created_by>admin</sys_created_by><sys_created_on>2020-01-16 10:36:37</sys_created_on><sys_id>e7530b7607d6c410944dfc018c1ed077</sys_id><sys_mod_count>0</sys_mod_count><sys_recorded_at>16fa3a962bd0000001</sys_recorded_at><sys_updated_by>admin</sys_updated_by><sys_updated_on>2020-01-16 10:36:37</sys_updated_on><table/><target_name>https://code.highcharts.com/highcharts.js</target_name><type>JS Include</type><update_domain>global</update_domain><update_guid>ca2ff8419a90485067ca4db8699673a7</update_guid><update_guid_history>ca2ff8419a90485067ca4db8699673a7:467485471</update_guid_history><update_set/><view/></sys_update_xml><sys_update_xml action="INSERT_OR_UPDATE"><action>INSERT_OR_UPDATE</action><application display_value="Global">global</application><category>customer</category><comments/><name>sp_container_fef88ad1dbdc4850041264a14a961994</name><payload><![CDATA[<?xml version="1.0" encoding="UTF-8"?><record_update table="sp_container"><sp_container action="INSERT_OR_UPDATE"><background_color/><background_image/><background_style>default</background_style><bootstrap_alt>false</bootstrap_alt><class_name/><container_class_name/><name>sprint_review - Container 1</name><order>1</order><sp_page display_value="sprint_review">76f88ad1dbdc4850041264a14a961992</sp_page><subheader>false</subheader><sys_class_name>sp_container</sys_class_name><sys_created_by>pcawdron</sys_created_by><sys_created_on>2019-10-04 04:25:02</sys_created_on><sys_id>fef88ad1dbdc4850041264a14a961994</sys_id><sys_mod_count>4</sys_mod_count><sys_name>sprint_review - Container 1</sys_name><sys_package display_value="Global" source="global">global</sys_package><sys_policy/><sys_scope display_value="Global">global</sys_scope><sys_update_name>sp_container_fef88ad1dbdc4850041264a14a961994</sys_update_name><sys_updated_by>pcawdron</sys_updated_by><sys_updated_on>2019-10-04 05:56:51</sys_updated_on><title/><width>container-fluid</width></sp_container></record_update>]]></payload><payload_hash>2016420908</payload_hash><remote_update_set display_value="(JDS) Sprint Review">6b530b7607d6c410944dfc018c1ed075</remote_update_set><replace_on_upgrade>false</replace_on_upgrade><sys_created_by>admin</sys_created_by><sys_created_on>2020-01-16 10:36:37</sys_created_on><sys_id>eb530b7607d6c410944dfc018c1ed076</sys_id><sys_mod_count>0</sys_mod_count><sys_recorded_at>16fa3a962d60000001</sys_recorded_at><sys_updated_by>admin</sys_updated_by><sys_updated_on>2020-01-16 10:36:37</sys_updated_on><table/><target_name>sprint_review - Container 1</target_name><type>Container</type><update_domain>global</update_domain><update_guid>6ffd9a55d21088507e2fd6bf42936ec3</update_guid><update_guid_history>6ffd9a55d21088507e2fd6bf42936ec3:2016420908,d4dd1a55e910885043a396bad0feba53:957374712,fdadda15ba108850f4f28e9799385a7d:2016420908,71090a5114dc48500122af3f962a3696:-1015856724,36f88ad1f4dc48504a7690beeea1be96:-844997495</update_guid_history><update_set/><view/></sys_update_xml><sys_update_xml action="INSERT_OR_UPDATE"><action>INSERT_OR_UPDATE</action><application display_value="Global">global</application><category>customer</category><comments/><name>m2m_sp_dependency_js_include_c62ff841db904850041264a14a9619a8</name><payload><![CDATA[<?xml version="1.0" encoding="UTF-8"?><record_update table="m2m_sp_dependency_js_include"><m2m_sp_dependency_js_include action="INSERT_OR_UPDATE"><order>100</order><sp_dependency display_value="Highcharts reference">35fe3441db904850041264a14a961943</sp_dependency><sp_js_include display_value="https://code.highcharts.com/highcharts.js">6b0fb841db904850041264a14a96198a</sp_js_include><sys_class_name>m2m_sp_dependency_js_include</sys_class_name><sys_created_by>pcawdron</sys_created_by><sys_created_on>2019-10-03 04:24:01</sys_created_on><sys_id>c62ff841db904850041264a14a9619a8</sys_id><sys_mod_count>0</sys_mod_count><sys_name>Highcharts reference.https://code.highcharts.com/highcharts.js</sys_name><sys_package display_value="Global" source="global">global</sys_package><sys_policy/><sys_scope display_value="Global">global</sys_scope><sys_update_name>m2m_sp_dependency_js_include_c62ff841db904850041264a14a9619a8</sys_update_name><sys_updated_by>pcawdron</sys_updated_by><sys_updated_on>2019-10-03 04:24:01</sys_updated_on></m2m_sp_dependency_js_include></record_update>]]></payload><payload_hash>1053038587</payload_hash><remote_update_set display_value="(JDS) Sprint Review">6b530b7607d6c410944dfc018c1ed075</remote_update_set><replace_on_upgrade>false</replace_on_upgrade><sys_created_by>admin</sys_created_by><sys_created_on>2020-01-16 10:36:37</sys_created_on><sys_id>ef530b7607d6c410944dfc018c1ed075</sys_id><sys_mod_count>0</sys_mod_count><sys_recorded_at>16fa3a962c20000001</sys_recorded_at><sys_updated_by>admin</sys_updated_by><sys_updated_on>2020-01-16 10:36:37</sys_updated_on><table/><target_name>Highcharts reference.https://code.highcharts.com/highcharts.js</target_name><type>Dependency JS Includes</type><update_domain>global</update_domain><update_guid>8e2ff8419c9048508372e484bdb18fa9</update_guid><update_guid_history>8e2ff8419c9048508372e484bdb18fa9:1053038587</update_guid_history><update_set/><view/></sys_update_xml></unload>
